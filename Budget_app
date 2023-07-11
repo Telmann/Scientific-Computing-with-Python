@@ -1,0 +1,103 @@
+class Category:
+
+    def __init__(self, category):
+        self.category = category
+        self.ledger = []
+
+    def deposit(self, amount, description=""):
+        self.amount = amount
+        self.description = description
+        self.ledger.append({"amount": amount, "description": description})
+
+    def __str__(self):
+        main_line = (int(30 - len(self.category))//2 * '*') + self.category + (int(30 - len(self.category))//2 * '*')
+        total = f'Total: {self.get_balance()}'
+        strings = ''
+        for item in self.ledger:
+            desc = (item["description"])[:23]
+            am = f'{item["amount"]:>7.2f}'
+            strings += desc + am.rjust(30-len(desc)) + '\n'
+        return main_line + '\n' + strings + total
+
+    def withdraw(self, amount, description=""):
+        if self.check_funds(amount):
+            self.ledger.append({"amount": -amount, "description": description})
+            return True
+        else:
+            return False
+
+    def get_balance(self):
+        balance = 0
+        for pay in self.ledger:
+            balance += pay["amount"]
+        return balance
+
+    def transfer(self, amount, category):
+        if self.check_funds(amount):
+            self.withdraw(amount, 'Transfer to ' + category.category)
+            category.deposit(amount, 'Transfer from ' + self.category)
+            return True
+        else:
+            return False
+
+    def check_funds(self, amount):
+        if amount > self.get_balance():
+            return False
+        else:
+            return True
+
+    def need_withdraws(self):
+        spent_money = 0
+        for item in self.ledger:
+            if item['amount'] < 0:
+                spent_money += item['amount']
+        return spent_money
+
+
+def truncate(n):
+    return int(n * 10) / 10
+
+def get_spent_money(categories):
+    spent_money = 0
+    some_list = []
+    for category in categories:
+        spent_money += category.need_withdraws()
+        some_list.append(category.need_withdraws())
+    return list(map(lambda x: truncate(x / spent_money), some_list))
+
+
+
+
+def create_spend_chart(categories):
+    first_line = 'Percentage spent by category\n'
+    max_percent = 100
+    totals = get_spent_money(categories)
+    while max_percent >= 0:
+        line = ' '
+        for spent_money in totals:
+            if spent_money * 100 >= max_percent:
+                line += 'o  '
+            else:
+                line += '   '
+        first_line += str(max_percent).rjust(3) + '|' + line + '\n'
+        max_percent -= 10
+
+    dashes = '-' + '---' * len(categories)
+    categories_names = []
+    axis = ''
+    for category in categories:
+        categories_names.append(category.category)
+
+    maxim_len = max(categories_names, key=len)
+    for i in range(len(maxim_len)):
+        cat_str = '     '
+        for category in categories_names:
+            if i >= len(category):
+                cat_str += '   '
+            else:
+                cat_str += category[i] + '  '
+        if (i != (len(maxim_len) - 1)):
+            cat_str += '\n'
+        axis += cat_str
+    first_line += dashes.rjust(len(dashes) + 4) + '\n' + axis
+    return first_line
